@@ -103,6 +103,7 @@ fn main() {
         let start = Instant::now();
         let proof = client
             .prove(&pk, &stdin)
+            .groth16()
             .run()
             .expect("failed to generate proof");
         let proving_time = start.elapsed();
