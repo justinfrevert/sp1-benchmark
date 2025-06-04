@@ -1,15 +1,3 @@
-//! An end-to-end example of using the SP1 SDK to generate a proof of a program that can be executed
-//! or have a core proof generated.
-//!
-//! You can run this script using the following command:
-//! ```shell
-//! RUST_LOG=info cargo run --release -- --execute
-//! ```
-//! or
-//! ```shell
-//! RUST_LOG=info cargo run --release -- --prove
-//! ```
-
 use clap::Parser;
 use program_primitives::EcdsaInput;
 use rand_core::OsRng;
@@ -31,13 +19,7 @@ pub const FIBONACCI_ELF: &[u8] = include_elf!("fibonacci-program");
 #[command(author, version, about, long_about = None)]
 struct Args {
     #[arg(long)]
-    execute: bool,
-
-    #[arg(long)]
-    prove: bool,
-
-    #[arg(long, default_value = "20")]
-    n: u32,
+    sig_amount: u32,
 }
 
 fn generate_inputs(count: usize) -> EcdsaInput {
@@ -78,41 +60,34 @@ fn main() {
     // Parse the command line arguments.
     let args = Args::parse();
 
-    if args.execute == args.prove {
-        eprintln!("Error: You must specify either --execute or --prove");
-        std::process::exit(1);
-    }
 
     let client = ProverClient::from_env();
 
     let mut stdin = SP1Stdin::new();
-    let input = generate_inputs(500);
+    let input = generate_inputs(args.sig_amount as usize);
     stdin.write(&input);
 
     let mut stdin = SP1Stdin::new();
     stdin.write(&input);
 
-    if args.execute {
-        println!("Not enabled");
-    } else {
-        // Setup the program for proving.
-        println!("Generating proving and verification keys...");
-        let (pk, vk) = client.setup(FIBONACCI_ELF);
+    // Setup the program for proving.
+    println!("Generating proving and verification keys...");
+    let (pk, vk) = client.setup(FIBONACCI_ELF);
 
-        println!("Starting proof generation...");
-        let start = Instant::now();
-        let proof = client
-            .prove(&pk, &stdin)
-            .groth16()
-            .run()
-            .expect("failed to generate proof");
-        let proving_time = start.elapsed();
-        println!("Proof generated in {:.2?}", proving_time);
+    println!("Starting proof generation...");
+    let start = Instant::now();
+    let proof = client
+        .prove(&pk, &stdin)
+        .groth16()
+        .run()
+        .expect("failed to generate proof");
+    let proving_time = start.elapsed();
+    println!("Proof generated in {:.2?}", proving_time);
 
-        println!("Starting proof verification...");
-        let verify_start = Instant::now();
-        client.verify(&proof, &vk).expect("failed to verify proof");
-        let verify_time = verify_start.elapsed();
-        println!("Proof verified in {:.2?}", verify_time);
-    }
+    println!("Starting proof verification...");
+    let verify_start = Instant::now();
+    client.verify(&proof, &vk).expect("failed to verify proof");
+    let verify_time = verify_start.elapsed();
+    println!("Proof verified in {:.2?}", verify_time);
+
 }
