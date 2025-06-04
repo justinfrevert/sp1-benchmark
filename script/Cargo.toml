@@ -25,6 +25,8 @@ tracing = "0.1.40"
 hex = "0.4.3"
 dotenv = "0.15.0"
 k256 = { version = "0.13.4", features = ["serde"] }
+ed25519-consensus = { version = "2.1", default-features = false }
+
 
 rand_core = { version = "0.9.3", features = ["std", "os_rng"]}
 program-primitives = { workspace = true }

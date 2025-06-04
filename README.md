@@ -18,33 +18,20 @@ generate an EVM-compatible proof.
 The program is automatically built through `script/build.rs` when the script is built.
 
 
-### Generate an SP1 Core Proof
+### Generate an SP1 Groth16 Proof
 
-To generate an SP1 [core proof](https://docs.succinct.xyz/docs/sp1/generating-proofs/proof-types#core-default) for your program:
-
-```sh
-cd script
-cargo run --release -- --prove
-```
-
-### Generate an EVM-Compatible Proof
-
-> [!WARNING]
-> You will need at least 16GB RAM to generate a Groth16 or PLONK proof. View the [SP1 docs](https://docs.succinct.xyz/docs/sp1/getting-started/hardware-requirements#local-proving) for more information.
-
-Generating a proof that is cheap to verify on the EVM (e.g. Groth16 or PLONK) is more intensive than generating a core proof.
-
-To generate a Groth16 proof:
+To generate an SP1 [core proof](https://docs.succinct.xyz/docs/sp1/generating-proofs/proof-types#core-default) of verification of a random ecdsa signature:
 
 ```sh
 cd script
-cargo run --release --bin evm -- --system groth16
+cargo run --release -- --sig-amount 1
 ```
 
-To generate a PLONK proof:
+To generate an SP1 [core proof](https://docs.succinct.xyz/docs/sp1/generating-proofs/proof-types#core-default) of verification of 10 random ed25519 signatures:
 
 ```sh
-cargo run --release --bin evm -- --system plonk
+cd script
+cargo run --release -- --sig-amount 10 --ed25519
 ```
 
 These commands will also generate fixtures that can be used to test the verification of SP1 proofs
@@ -56,24 +43,4 @@ To retrieve your `programVKey` for your on-chain contract, run the following com
 
 ```sh
 cargo run --release --bin vkey
-```
-
-## Using the Prover Network
-
-We highly recommend using the [Succinct Prover Network](https://docs.succinct.xyz/docs/network/introduction) for any non-trivial programs or benchmarking purposes. For more information, see the [key setup guide](https://docs.succinct.xyz/docs/network/developers/key-setup) to get started.
-
-To get started, copy the example environment file:
-
-```sh
-cp .env.example .env
-```
-
-Then, set the `SP1_PROVER` environment variable to `network` and set the `NETWORK_PRIVATE_KEY`
-environment variable to your whitelisted private key.
-
-For example, to generate an EVM-compatible proof using the prover network, run the following
-command:
-
-```sh
-SP1_PROVER=network NETWORK_PRIVATE_KEY=... cargo run --release --bin evm
 ```

@@ -1,0 +1,10 @@
+[package]
+version = "0.1.0"
+name = "ed25519-program"
+edition = "2021"
+
+[dependencies]
+sp1-zkvm = "5.0.0"
+program-primitives = { workspace = true }
+ed25519-consensus = { version = "2.1", default-features = false }
+

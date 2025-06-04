@@ -1,5 +1,5 @@
 use clap::Parser;
-use program_primitives::EcdsaInput;
+use program_primitives::{EcdsaInput, Ed25519Input};
 use rand_core::OsRng;
 use rand_core::TryRngCore;
 use sp1_sdk::{include_elf, ProverClient, SP1Stdin};
@@ -11,8 +11,12 @@ use k256::{
     EncodedPoint,
 };
 
+use ed25519_consensus::{SigningKey as Ed25519SigningKey, VerificationKey as Ed25519VerifyingKey, Signature as Ed25519Signature};
+
+
 /// The ELF (executable and linkable format) file for the Succinct RISC-V zkVM.
 pub const FIBONACCI_ELF: &[u8] = include_elf!("fibonacci-program");
+pub const ED25519_ELF: &[u8] = include_elf!("ed25519-program");
 
 /// The arguments for the command.
 #[derive(Parser, Debug)]
@@ -20,9 +24,12 @@ pub const FIBONACCI_ELF: &[u8] = include_elf!("fibonacci-program");
 struct Args {
     #[arg(long)]
     sig_amount: u32,
+
+    #[arg(long)]
+    ed25519: bool,
 }
 
-fn generate_inputs(count: usize) -> EcdsaInput {
+fn generate_ecdsa_inputs(count: usize) -> EcdsaInput {
     let mut pubkey_bytes = Vec::new();
     let mut message_bytes = Vec::new();
     let mut signature_bytes = Vec::new();
@@ -32,8 +39,6 @@ fn generate_inputs(count: usize) -> EcdsaInput {
         OsRng.try_fill_bytes(&mut sk_bytes);
     
         let signing_key = SigningKey::from_slice(&sk_bytes).unwrap();
-
-
         let verify_key = signing_key.verifying_key();
 
         let msg = b"hello world".to_vec(); // or random if you prefer
@@ -51,6 +56,37 @@ fn generate_inputs(count: usize) -> EcdsaInput {
     }
 }
 
+fn generate_ed25519_inputs(count: usize) -> Ed25519Input {
+    let mut pubkey_bytes = Vec::new();
+    let mut message_bytes = Vec::new();
+    let mut signature_bytes = Vec::new();
+
+    for _ in 0..count {
+        let mut sk_bytes = [0u8; 32];
+        OsRng.try_fill_bytes(&mut sk_bytes);
+
+        // let signing_key = Ed25519SigningKey::from_bytes(&sk_bytes);
+
+        let signing_key = Ed25519SigningKey::try_from(
+            <[u8; 32]>::try_from(sk_bytes).expect("Invalid pubkey length")
+        ).expect("Invalid signingkey");
+
+        let verifying_key = Ed25519VerifyingKey::from(&signing_key);
+
+        let msg = b"hello world".to_vec();
+        let sig: Ed25519Signature = signing_key.sign(&msg);
+
+        pubkey_bytes.push(verifying_key.to_bytes().to_vec());
+        message_bytes.push(msg);
+        signature_bytes.push(sig.to_bytes().to_vec());
+    }
+
+    Ed25519Input {
+        pubkey_bytes,
+        message_bytes,
+        signature_bytes,
+    }
+}
 
 fn main() {
     // Setup the logger.
@@ -63,31 +99,44 @@ fn main() {
 
     let client = ProverClient::from_env();
 
-    let mut stdin = SP1Stdin::new();
-    let input = generate_inputs(args.sig_amount as usize);
-    stdin.write(&input);
 
-    let mut stdin = SP1Stdin::new();
-    stdin.write(&input);
+    if args.ed25519 {
+        println!("Using Ed25519 precompile...");
+        let input = generate_ed25519_inputs(args.sig_amount as usize);
+        let mut stdin = SP1Stdin::new();
+        stdin.write(&input);
 
-    // Setup the program for proving.
-    println!("Generating proving and verification keys...");
-    let (pk, vk) = client.setup(FIBONACCI_ELF);
+        let (pk, vk) = client.setup(ED25519_ELF);
 
-    println!("Starting proof generation...");
-    let start = Instant::now();
-    let proof = client
-        .prove(&pk, &stdin)
-        .groth16()
-        .run()
-        .expect("failed to generate proof");
-    let proving_time = start.elapsed();
-    println!("Proof generated in {:.2?}", proving_time);
+        let start = Instant::now();
+        let proof = client.prove(&pk, &stdin).groth16().run().expect("failed to prove");
+        let proving_time = start.elapsed();
 
-    println!("Starting proof verification...");
-    let verify_start = Instant::now();
-    client.verify(&proof, &vk).expect("failed to verify proof");
-    let verify_time = verify_start.elapsed();
-    println!("Proof verified in {:.2?}", verify_time);
+        let verify_start = Instant::now();
+        client.verify(&proof, &vk).expect("failed to verify");
+        let verify_time = verify_start.elapsed();
+
+        println!("Ed25519 Proof time:   {:?}", proving_time);
+        println!("Ed25519 Verify time: {:?}", verify_time);
+    } else {
+        println!("Using ECDSA (k256)...");
+        let input = generate_ecdsa_inputs(args.sig_amount as usize);
+        let mut stdin = SP1Stdin::new();
+        stdin.write(&input);
+
+        let (pk, vk) = client.setup(FIBONACCI_ELF);
+
+        let start = Instant::now();
+        let proof = client.prove(&pk, &stdin).groth16().run().expect("failed to prove");
+        let proving_time = start.elapsed();
+
+        let verify_start = Instant::now();
+        client.verify(&proof, &vk).expect("failed to verify");
+        let verify_time = verify_start.elapsed();
+
+        println!("ECDSA Proof time:   {:?}", proving_time);
+        println!("ECDSA Verify time: {:?}", verify_time);
+    }
+
 
 }

@@ -167,7 +167,7 @@ dependencies = [
  "ark-serialize",
  "ark-std",
  "derivative",
- "digest",
+ "digest 0.10.7",
  "itertools 0.10.5",
  "num-bigint 0.4.6",
  "num-traits",
@@ -206,7 +206,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb7b85a02b83d2f22f89bd5cac66c9c89474240cb6207cb1efc16d098e822a5"
 dependencies = [
  "ark-std",
- "digest",
+ "digest 0.10.7",
  "num-bigint 0.4.6",
 ]
 
@@ -433,7 +433,7 @@ version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "46502ad458c9a52b69d4d4d32775c788b7a1b85e8bc9d482d92250fc0e3f8efe"
 dependencies = [
- "digest",
+ "digest 0.10.7",
 ]
 
 [[package]]
@@ -458,6 +458,15 @@ dependencies = [
  "cc",
  "cfg-if",
  "constant_time_eq",
+]
+
+[[package]]
+name = "block-buffer"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4152116fd6e9dadb291ae18fc1ec3575ed6d84c29642d97890f4b4a3417297e4"
+dependencies = [
+ "generic-array 0.14.7",
 ]
 
 [[package]]
@@ -821,6 +830,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "curve25519-dalek-ng"
+version = "4.1.1"
+source = "git+https://github.com/sp1-patches/curve25519-dalek-ng?tag=patch-4.1.1-sp1-5.0.0#09a85b78813397b775beaff879829a56992f6bc8"
+dependencies = [
+ "byteorder",
+ "cfg-if",
+ "digest 0.9.0",
+ "rand_core 0.6.4",
+ "sp1-lib",
+ "subtle-ng",
+ "zeroize",
+]
+
+[[package]]
 name = "dashu"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -972,11 +995,20 @@ dependencies = [
 
 [[package]]
 name = "digest"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3dd60d1080a57a05ab032377049e0591415d2b31afd7028356dbf3cc6dcb066"
+dependencies = [
+ "generic-array 0.14.7",
+]
+
+[[package]]
+name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
- "block-buffer",
+ "block-buffer 0.10.4",
  "const-oid",
  "crypto-common",
  "subtle",
@@ -1032,7 +1064,7 @@ version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ac1e888d6830712d565b2f3a974be3200be9296bc1b03db8251a4cbf18a4a34"
 dependencies = [
- "digest",
+ "digest 0.10.7",
  "futures",
  "rand 0.8.5",
  "reqwest",
@@ -1047,7 +1079,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee27f32b5c5292967d2d4a9d7f1e0b0aed2c15daded5a60300e4abb9d8020bca"
 dependencies = [
  "der",
- "digest",
+ "digest 0.10.7",
  "elliptic-curve",
  "rfc6979 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "signature",
@@ -1060,12 +1092,34 @@ version = "0.16.9"
 source = "git+https://github.com/sp1-patches/signatures.git?tag=patch-16.9-sp1-4.1.0#1880299a48fe7ef249edaa616fd411239fb5daf1"
 dependencies = [
  "der",
- "digest",
+ "digest 0.10.7",
  "elliptic-curve",
  "rfc6979 0.4.0 (git+https://github.com/sp1-patches/signatures.git?tag=patch-16.9-sp1-4.1.0)",
  "serdect",
  "signature",
  "spki",
+]
+
+[[package]]
+name = "ed25519-consensus"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c8465edc8ee7436ffea81d21a019b16676ee3db267aa8d5a8d729581ecf998b"
+dependencies = [
+ "curve25519-dalek-ng",
+ "hex",
+ "rand_core 0.6.4",
+ "sha2 0.9.9",
+ "zeroize",
+]
+
+[[package]]
+name = "ed25519-program"
+version = "0.1.0"
+dependencies = [
+ "ed25519-consensus",
+ "program-primitives",
+ "sp1-zkvm",
 ]
 
 [[package]]
@@ -1088,7 +1142,7 @@ checksum = "b5e6043086bf7973472e0c7dff2142ea0b680d30e18d9cc40f267efbf222bd47"
 dependencies = [
  "base16ct",
  "crypto-bigint",
- "digest",
+ "digest 0.10.7",
  "ff 0.13.1",
  "generic-array 0.14.7",
  "group 0.13.0",
@@ -1226,6 +1280,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "dotenv",
+ "ed25519-consensus",
  "hex",
  "k256",
  "program-primitives",
@@ -1561,7 +1616,7 @@ version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
 dependencies = [
- "digest",
+ "digest 0.10.7",
 ]
 
 [[package]]
@@ -1994,7 +2049,7 @@ dependencies = [
  "hex",
  "once_cell",
  "serdect",
- "sha2",
+ "sha2 0.10.8",
  "signature",
  "sp1-lib",
 ]
@@ -2351,6 +2406,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
+name = "opaque-debug"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381"
+
+[[package]]
 name = "openssl-probe"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2377,7 +2438,7 @@ dependencies = [
  "ecdsa 0.16.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "elliptic-curve",
  "primeorder",
- "sha2",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -3582,13 +3643,24 @@ dependencies = [
 
 [[package]]
 name = "sha2"
+version = "0.9.9"
+source = "git+https://github.com/sp1-patches/RustCrypto-hashes?tag=patch-sha2-0.9.9-sp1-4.0.0#db82a4848f8d033eab544255e1efa036cc06f054"
+dependencies = [
+ "block-buffer 0.9.0",
+ "cfg-if",
+ "cpufeatures",
+ "digest 0.9.0",
+ "opaque-debug",
+]
+
+[[package]]
+name = "sha2"
 version = "0.10.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "793db75ad2bcafc3ffa7c68b215fee268f537982cd901d132f89c6343f3a3dc8"
+source = "git+https://github.com/sp1-patches/RustCrypto-hashes?tag=patch-sha2-0.10.8-sp1-4.0.0#1f224388fdede7cef649bce0d63876d1a9e3f515"
 dependencies = [
  "cfg-if",
  "cpufeatures",
- "digest",
+ "digest 0.10.7",
 ]
 
 [[package]]
@@ -3597,7 +3669,7 @@ version = "0.10.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "75872d278a8f37ef87fa0ddbda7802605cb18344497949862c0d4dcb291eba60"
 dependencies = [
- "digest",
+ "digest 0.10.7",
  "keccak",
 ]
 
@@ -3631,7 +3703,7 @@ version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de"
 dependencies = [
- "digest",
+ "digest 0.10.7",
  "rand_core 0.6.4",
 ]
 
@@ -3862,7 +3934,7 @@ dependencies = [
  "p3-poseidon2",
  "p3-symmetric",
  "serde",
- "sha2",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -3895,7 +3967,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serial_test",
- "sha2",
+ "sha2 0.10.8",
  "sp1-core-executor",
  "sp1-core-machine",
  "sp1-primitives",
@@ -4038,7 +4110,7 @@ dependencies = [
  "p3-symmetric",
  "serde",
  "serde_json",
- "sha2",
+ "sha2 0.10.8",
  "sp1-core-machine",
  "sp1-recursion-compiler",
  "sp1-stark",
@@ -4137,7 +4209,7 @@ dependencies = [
  "lazy_static",
  "libm",
  "rand 0.8.5",
- "sha2",
+ "sha2 0.10.8",
  "sp1-lib",
  "sp1-primitives",
 ]
@@ -4215,6 +4287,12 @@ name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+
+[[package]]
+name = "subtle-ng"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
 
 [[package]]
 name = "syn"
@@ -5463,7 +5541,7 @@ dependencies = [
  "pasta_curves 0.5.1",
  "rand 0.8.5",
  "serde",
- "sha2",
+ "sha2 0.10.8",
  "sha3",
  "subtle",
 ]
