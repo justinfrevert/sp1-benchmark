@@ -93,7 +93,7 @@ fn main() {
     stdin.write(&input);
 
     if args.execute {
-        println!("Only for proving");
+        println!("Not enabled");
     } else {
         // Setup the program for proving.
         println!("Generating proving and verification keys...");

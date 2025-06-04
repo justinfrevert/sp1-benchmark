@@ -17,16 +17,6 @@ generate an EVM-compatible proof.
 
 The program is automatically built through `script/build.rs` when the script is built.
 
-### Execute the Program
-
-To run the program without generating a proof:
-
-```sh
-cd script
-cargo run --release -- --execute
-```
-
-This will execute the program and display the output.
 
 ### Generate an SP1 Core Proof
 
