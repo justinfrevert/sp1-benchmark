@@ -2,7 +2,7 @@ use clap::Parser;
 use program_primitives::{EcdsaInput, Ed25519Input};
 use rand_core::OsRng;
 use rand_core::TryRngCore;
-use sp1_sdk::{include_elf, ProverClient, SP1Stdin};
+use sp1_sdk::{include_elf, EnvProver, ProverClient, SP1Stdin};
 use std::time::Instant;
 
 use k256::ecdsa::signature::Signer;
@@ -11,8 +11,10 @@ use k256::{
     EncodedPoint,
 };
 
-use ed25519_consensus::{SigningKey as Ed25519SigningKey, VerificationKey as Ed25519VerifyingKey, Signature as Ed25519Signature};
-
+use ed25519_consensus::{
+    Signature as Ed25519Signature, SigningKey as Ed25519SigningKey,
+    VerificationKey as Ed25519VerifyingKey,
+};
 
 /// The ELF (executable and linkable format) file for the Succinct RISC-V zkVM.
 pub const FIBONACCI_ELF: &[u8] = include_elf!("fibonacci-program");
@@ -25,8 +27,13 @@ struct Args {
     #[arg(long)]
     sig_amount: u32,
 
+    // prove ed255109 signatures instead of ecdsa
     #[arg(long)]
     ed25519: bool,
+
+    /// Use PLONK instead of default Groth16
+    #[arg(long)]
+    plonk: bool,
 }
 
 fn generate_ecdsa_inputs(count: usize) -> EcdsaInput {
@@ -37,7 +44,7 @@ fn generate_ecdsa_inputs(count: usize) -> EcdsaInput {
     for _ in 0..count {
         let mut sk_bytes = [0u8; 32];
         OsRng.try_fill_bytes(&mut sk_bytes);
-    
+
         let signing_key = SigningKey::from_slice(&sk_bytes).unwrap();
         let verify_key = signing_key.verifying_key();
 
@@ -68,8 +75,9 @@ fn generate_ed25519_inputs(count: usize) -> Ed25519Input {
         // let signing_key = Ed25519SigningKey::from_bytes(&sk_bytes);
 
         let signing_key = Ed25519SigningKey::try_from(
-            <[u8; 32]>::try_from(sk_bytes).expect("Invalid pubkey length")
-        ).expect("Invalid signingkey");
+            <[u8; 32]>::try_from(sk_bytes).expect("Invalid pubkey length"),
+        )
+        .expect("Invalid signingkey");
 
         let verifying_key = Ed25519VerifyingKey::from(&signing_key);
 
@@ -88,6 +96,19 @@ fn generate_ed25519_inputs(count: usize) -> Ed25519Input {
     }
 }
 
+fn prove_with_selected_scheme(
+    client: &EnvProver,
+    pk: &sp1_sdk::SP1ProvingKey,
+    stdin: &SP1Stdin,
+    use_plonk: bool,
+) -> Result<sp1_sdk::SP1ProofWithPublicValues, Box<dyn std::error::Error>> {
+    if use_plonk {
+        Ok(client.prove(pk, stdin).plonk().run()?)
+    } else {
+        Ok(client.prove(pk, stdin).groth16().run()?)
+    }
+}
+
 fn main() {
     // Setup the logger.
     sp1_sdk::utils::setup_logger();
@@ -96,9 +117,7 @@ fn main() {
     // Parse the command line arguments.
     let args = Args::parse();
 
-
     let client = ProverClient::from_env();
-
 
     if args.ed25519 {
         println!("Using Ed25519 precompile...");
@@ -109,7 +128,9 @@ fn main() {
         let (pk, vk) = client.setup(ED25519_ELF);
 
         let start = Instant::now();
-        let proof = client.prove(&pk, &stdin).groth16().run().expect("failed to prove");
+        println!("Proving..");
+        let proof =
+            prove_with_selected_scheme(&client, &pk, &stdin, args.plonk).expect("failed to prove");
         let proving_time = start.elapsed();
 
         let verify_start = Instant::now();
@@ -127,7 +148,9 @@ fn main() {
         let (pk, vk) = client.setup(FIBONACCI_ELF);
 
         let start = Instant::now();
-        let proof = client.prove(&pk, &stdin).groth16().run().expect("failed to prove");
+        println!("Proving..");
+        let proof =
+            prove_with_selected_scheme(&client, &pk, &stdin, args.plonk).expect("failed to prove");
         let proving_time = start.elapsed();
 
         let verify_start = Instant::now();
@@ -137,6 +160,4 @@ fn main() {
         println!("ECDSA Proof time:   {:?}", proving_time);
         println!("ECDSA Verify time: {:?}", verify_time);
     }
-
-
 }
